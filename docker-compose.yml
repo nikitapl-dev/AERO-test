@@ -1,0 +1,35 @@
+version: "3.9"
+   
+services:
+  pg_db:
+    build: database/
+    volumes:
+     - ./database/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${postgres_db}
+      - POSTGRES_USER=${postgres_user}
+      - POSTGRES_PASSWORD=${postgres_password}
+      - POSTGRES_HOST_AUTH_METHOD=${postgres_auth}
+    expose:
+      - 5432
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${postgres_user} -d ${postgres_db}'"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - db_net
+  elt:
+    build: elt/
+    environment:
+      - POSTGRES_DB=${postgres_db}
+      - POSTGRES_USER=${postgres_user}
+      - POSTGRES_PASSWORD=${postgres_password}
+    depends_on:
+      pg_db:
+        condition: service_healthy
+    networks:
+      - db_net
+networks:
+    db_net:
+      driver: bridge
